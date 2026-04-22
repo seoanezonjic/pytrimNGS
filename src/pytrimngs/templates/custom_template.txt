@@ -1,0 +1,22 @@
+##======================================
+## General parameters to ...
+##======================================
+
+##Help: <br/>This template is used to aply two custom plugins<br/>
+
+##Help: <br/><b>Plugin list and aplication order:</b><br/>
+
+##Help: <ul>
+##Help: <li>PluginCustomPluginBb: explain it.... </li>
+##Help: <li>PluginCustomPlugin2Bb: explain it.... </li>
+##Help: </ul>
+
+#List of plugins to be applied
+plugin_list = 
+
+
+
+
+
+
+

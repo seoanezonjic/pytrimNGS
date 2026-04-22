@@ -1,0 +1,19 @@
+# ==============================================================
+# General parameters for genomics - Illumina reads
+# ==============================================================
+
+# Help: <br/>This template is used to preprocess generic illumina reads for genomics <br/>
+# Help: <br/><b>Plugin list and aplication order:</b><br/>
+
+# Help: <ul>
+# Help: <li>PluginAdapters: trimming sequencing adapters.</li>
+# Help: <li>PluginContaminants: filtering out reads with contaminant fragments found in the contaminant database. </li>
+# Help: <li>PluginQuality: trimming low quality regions from sequences. </li>
+# Help: <li>PluginLowComplexity: filtering out reads with low complexity. </li>
+# Help: </ul>
+
+plugin_list = PluginAdapters3,PluginAdapters5,PluginContaminants,PluginQuality,PluginLowComplexity
+
+# Minimum insert size for every trimmed sequence
+
+minlength=80

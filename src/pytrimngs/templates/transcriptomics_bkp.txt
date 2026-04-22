@@ -1,0 +1,23 @@
+# ======================================
+# General parameters for transcriptomics - Illumina
+# ======================================
+
+# Help: <br/>This template is used to preprocess generic Illumina reads for transcriptomics<br/>
+# Help: <br/><b>Plugin list and aplication order:</b><br/>
+
+# Help: <ul>
+# Help: <li>PluginAdapters: trimming sequencing adapters.</li>
+# Help: <li>PluginFindPolyAt: trimming PolyA and PolyT. </li>
+# Help: <li>PluginContaminants: filtering out reads with contaminant fragments found in the contaminant database. </li>
+# Help: <li>PluginQuality: trimming low quality regions from sequences. </li>
+# Help: <li>PluginLowComplexity: filtering out reads with low complexity. </li>
+# Help: </ul>
+
+plugin_list = PluginAdapters3,PluginAdapters5,PluginPolyAt,PluginContaminants,PluginQuality,PluginLowComplexity
+
+contaminants_db = contaminants,cont_ribosome
+
+# Minimum insert size for every trimmed sequence
+
+minlength=60
+contaminants_aditional_params="maxindel=100000"
