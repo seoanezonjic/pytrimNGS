@@ -1,9 +1,61 @@
 #! /usr/bin/env python
+import glob
 import sys
 import os
 import re
 import time
 from importlib.resources import files
+
+def get_adapters_reads(files_index):
+    reads_after_adapters = []
+    for file in ["adapters_5_trimming_stats_cmd.txt", "adapters_3_trimming_stats_cmd.txt"]:
+        data = files_index.get(file) 
+        if data == None:
+            reads_after_adapters.append(None)
+            continue
+        for line in data:
+            if line[0] == "Result:": reads_after_adapters.append(int(line[1].split("reads")[0]))
+
+    reads_after_adapters = [x for x in reads_after_adapters if x is not None]
+    if len(reads_after_adapters) == 0:
+        reads_after_adapters = 'NA'
+    else:
+        reads_after_adapters = min(reads_after_adapters)
+    return reads_after_adapters
+
+def get_contaminant_reads(files_index):
+    all_contaminants = 0
+    for file in ["contaminants_contaminants_filtering_stats.txt"]:
+        data = files_index.get(file)
+        if data != None:
+            for contaminant_data in data:
+                if contaminant_data[0] == "name": continue
+                all_contaminants += int(contaminant_data[7])
+    return all_contaminants
+
+
+def main_pytrimngs_results_parser(opts):
+    args = vars(opts)
+    files_index = {}
+    for file_path in glob.glob(os.path.join(args['input_file'], '*.txt')):
+        filename = os.path.basename(file_path)
+        file_data = []
+        with open(file_path) as f:
+            for line in f: 
+                line = line.rstrip()
+                line = re.sub("#","", line)
+                line = re.sub(r' +', "", line)
+                file_data.append(line.split("\t"))
+            files_index[filename] = file_data
+    
+    stbb_metrics = {}
+    stbb_metrics["adapter_filter_passed"] = get_adapters_reads(files_index)
+    stbb_metrics["contaminants_reads"] = get_contaminant_reads(files_index)
+    print_metrics(stbb_metrics)
+
+def print_metrics(stbb_metrics):
+    for metric_name, metric in stbb_metrics.items():
+        print(f"{metric_name}\t{metric}")
 
 def main_pytrimngs(opts):
     import pytrimngs # For external_data

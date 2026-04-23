@@ -30,3 +30,13 @@ def pytrimngs(args = None):
     args = parser.parse_args()
     main_pytrimngs(args)
 
+def pytrimngs_results_parser(args = None):
+    if args == None: args = sys.argv[1:]
+    parser = argparse.ArgumentParser(description=" pytrimNGS [OPTIONS]")
+
+    parser.add_argument('-i', '--input_file',  dest='input_file',
+        help='pytrimNGS plugin stats directory. This argument must be indicated between quotes')
+    args = parser.parse_args()
+    main_pytrimngs_results_parser(args)
+
+
