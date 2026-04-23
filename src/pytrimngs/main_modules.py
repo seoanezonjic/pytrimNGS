@@ -57,6 +57,63 @@ def print_metrics(stbb_metrics):
     for metric_name, metric in stbb_metrics.items():
         print(f"{metric_name}\t{metric}")
 
+def main_get_fastqc_data(args):
+    import zipfile
+    import io
+    from pytrimngs.fastqc_parser import FastQC_Parser
+    options = vars(args)
+    all_stats = []
+    header = ['total_sequences', 'read_max_length', 'read_min_length', '%gc', 'mean_qual_per_base', 
+              'min_qual_per_base_in_lower_quartile', 'min_qual_per_base_in_10th_decile', 
+              'weigthed_qual_per_sequence', 'mean_indeterminations_per_base', 
+              'weigthed_read_length sequence_length_distribution']
+    for file in glob.glob(options['input_file']):
+        with zipfile.ZipFile(file) as zf:
+            zip_base_folder = zf.namelist()[0] 
+            text_file_handler = zf.open(name = os.path.join(zip_base_folder, "fastqc_data.txt"), mode = 'r')
+            text_file = io.TextIOWrapper(text_file_handler, encoding='utf-8', newline='').read()
+            modules = FastQC_Parser.parse_fastqc_data(text_file)
+            stats = [
+                modules['general_stats']['Total Sequences'],
+                modules['general_stats']['Read_max_length'],
+                modules['general_stats']['Read_min_length'],
+                modules['general_stats']['%GC'],
+                FastQC_Parser.get_mean(modules['quality_per_base'], 2),
+                FastQC_Parser.get_min(modules['quality_per_base'], 3),
+                FastQC_Parser.get_min(modules['quality_per_base'], 5),
+                FastQC_Parser.get_weighted_mean(modules['quality_per_sequence'], 0,1),
+                FastQC_Parser.get_mean(modules['indeterminations_per_base'], 1),
+                FastQC_Parser.get_weighted_mean_with_intervals(modules['sequence_length_distribution'], 0,1),
+                FastQC_Parser.parse_distributions(modules['sequence_length_distribution'])
+            ]
+            all_stats.append(stats)
+
+    n_samples = len(all_stats)
+    n_parameters = len(header)
+    means = []
+    for parameter_index in range(0, n_parameters - 1):
+        if header[parameter_index] == 'sequence_length_distribution':
+            all_distributions = [ all_stats[s][parameter_index] for s in range(0, n_samples - 1) ]
+            means.append(all_distributions.join(";"))
+        else:
+            summ = 0
+            for sample_index in range(0, n_samples -1): summ += all_stats[sample_index][parameter_index]
+            if not options['make_mean2count_metrics'] and header[parameter_index] == 'total_sequences':
+                means.append(summ)
+            else:
+                means.append(summ/n_samples)
+    
+    means_string = [ str(m) for m in means ]
+    if not options['transpose']:
+        if options['header']: print("\t".join(header))
+        print("\t".join(means_string))
+    else:
+        for i, mean in enumerate(means_string):
+            record = []
+            if options['header']: record.append(header[i])
+            record.append(mean)
+            print("\t".join(record))
+
 def main_pytrimngs(opts):
     import pytrimngs # For external_data
     from pytrimngs.pytrimngs import load_template, get_key_val, get_db_path, get_cmd, get_full_cmd, execute_cmd 
