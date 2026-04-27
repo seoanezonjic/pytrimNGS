@@ -91,13 +91,13 @@ def main_get_fastqc_data(args):
     n_samples = len(all_stats)
     n_parameters = len(header)
     means = []
-    for parameter_index in range(0, n_parameters - 1):
+    for parameter_index in range(0, n_parameters):
         if header[parameter_index] == 'sequence_length_distribution':
-            all_distributions = [ all_stats[s][parameter_index] for s in range(0, n_samples - 1) ]
+            all_distributions = [ all_stats[s][parameter_index] for s in range(0, n_samples) ]
             means.append(all_distributions.join(";"))
         else:
             summ = 0
-            for sample_index in range(0, n_samples -1): summ += all_stats[sample_index][parameter_index]
+            for sample_index in range(0, n_samples): summ += all_stats[sample_index][parameter_index]
             if not options['make_mean2count_metrics'] and header[parameter_index] == 'total_sequences':
                 means.append(summ)
             else:

@@ -39,13 +39,13 @@ class FastQC_Parser:
             elif attrib == '%GC':
                 stats[attrib] = float(value)
             elif attrib == "Sequence length":
-                    if '-' in value:
-                        min_val, max_val = value.split('-')
-                        stats['Read_max_length'] = int(max_val)
-                        stats['Read_min_length'] = int(min_val)
-                    else:
-                        stats['Read_max_length'] = int(value)        
-                        stats['Read_min_length'] = int(value)
+                if '-' in value:
+                    min_val, max_val = value.split('-')
+                    stats['Read_max_length'] = int(max_val)
+                    stats['Read_min_length'] = int(min_val)
+                else:
+                    stats['Read_max_length'] = int(value)        
+                    stats['Read_min_length'] = int(value)
             else:
                 stats[attrib] = value
         return stats
