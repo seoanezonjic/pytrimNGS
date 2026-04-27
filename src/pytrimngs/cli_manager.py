@@ -55,4 +55,11 @@ def get_fastqc_data(args = None):
     args = parser.parse_args()
     main_get_fastqc_data(args)
 
+def parse_STAR_log(args = None):
+    if args == None: args = sys.argv[1:]
+    parser = argparse.ArgumentParser(description=" parse_STAR_log [OPTIONS]")
 
+    parser.add_argument('-d', '--data',  dest='data',
+        help='Star Log File as input')
+    args = parser.parse_args()
+    main_parse_STAR_log(args)

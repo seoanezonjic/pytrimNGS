@@ -66,7 +66,7 @@ def main_get_fastqc_data(args):
     header = ['total_sequences', 'read_max_length', 'read_min_length', '%gc', 'mean_qual_per_base', 
               'min_qual_per_base_in_lower_quartile', 'min_qual_per_base_in_10th_decile', 
               'weigthed_qual_per_sequence', 'mean_indeterminations_per_base', 
-              'weigthed_read_length sequence_length_distribution']
+              'weigthed_read_length', 'sequence_length_distribution']
     for file in glob.glob(options['input_file']):
         with zipfile.ZipFile(file) as zf:
             zip_base_folder = zf.namelist()[0] 
@@ -94,7 +94,7 @@ def main_get_fastqc_data(args):
     for parameter_index in range(0, n_parameters):
         if header[parameter_index] == 'sequence_length_distribution':
             all_distributions = [ all_stats[s][parameter_index] for s in range(0, n_samples) ]
-            means.append(all_distributions.join(";"))
+            means.append(";".join(all_distributions))
         else:
             summ = 0
             for sample_index in range(0, n_samples): summ += all_stats[sample_index][parameter_index]
@@ -113,6 +113,17 @@ def main_get_fastqc_data(args):
             if options['header']: record.append(header[i])
             record.append(mean)
             print("\t".join(record))
+
+def main_parse_STAR_log(args):
+    opts = vars(args)
+    with open(opts['data']) as f:
+        for line in f:
+            if '|' in line:
+                metric, value = line.strip().split('|')
+                metric = metric.strip()
+                metric = re.sub(' ', '_', metric)
+                print(f"{metric}\t{value}")
+
 
 def main_pytrimngs(opts):
     import pytrimngs # For external_data

@@ -107,6 +107,6 @@ class FastQC_Parser:
 
     @classmethod
     def parse_distributions(cls, two_column_table):
-        distribution = [ f"{row[0]}\t{row[1]}" for row in two_column_table ]
+        distribution = [ f"{row[0]},{row[1]}" for row in two_column_table ]
         distribution_string = ':'.join(distribution)
         return distribution_string
