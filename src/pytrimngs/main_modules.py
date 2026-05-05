@@ -119,7 +119,8 @@ def main_parse_STAR_log(args):
     with open(opts['data']) as f:
         for line in f:
             if '|' in line:
-                metric, value = line.strip().split('|')
+                metric, value = line.strip().split("\t")
+                metric = re.sub('\\|', '', metric)
                 metric = metric.strip()
                 metric = re.sub(' ', '_', metric)
                 print(f"{metric}\t{value}")
