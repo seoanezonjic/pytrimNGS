@@ -179,7 +179,7 @@ def main_pytrimngs(opts):
     plugins = {
         'PluginReadInputBb': {
             'executor': f'java -ea -cp {bb_path_current} jgi.ReformatReads t={args['workers']} -Xmx{args['memory']}m',
-            'parameters': {'in': infastq1, 'in2': infastq2, 'int': 'f', 'out': 'stdout.fastq'},
+            'parameters': {'in': infastq1, 'int': 'f', 'out': 'stdout.fastq'}, # 'in2': infastq2,
             'output': 'input_stats.txt'
             },
         'PluginAdapters3': {
@@ -215,10 +215,14 @@ def main_pytrimngs(opts):
         'PluginSaveResultsBb': {
             'executor': f'java -ea -cp {bb_path_current} jgi.ReformatReads t={args['workers']} -Xmx{args['memory']}m',
             'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
-                           'out': outfastq1, 'out2': outfastq2, 'minlength': parms['minlength']},
+                           'out': outfastq1, 'minlength': parms['minlength']}, #'out2': outfastq2,
             'output': 'output_stats.txt'
         }
     }
+    # USER MODIFICATIONS
+    # In single end, disable IN/OUT of second pair
+    if infastq2 != False: plugins['PluginReadInputBb']['parameters']['in2'] = infastq2
+    if outfastq2 != False: plugins['PluginSaveResultsBb']['parameters']['out2'] = outfastq2
 
     pipe_cmd = get_full_cmd(parms['plugin_list'], plugins, out_log=out_logs)
     execute_cmd(pipe_cmd)
