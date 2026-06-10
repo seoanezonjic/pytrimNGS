@@ -7,7 +7,7 @@ def ls(x): return x.split(',')
 def dictio(x): 
     d = {}
     for pair in x.split(';'):
-        k, v = pair.split('=')
+        k, v = pair.split('=', 1) # split only cuts the first = character
         d[k] = v
     return d
 
@@ -15,6 +15,8 @@ def pytrimngs(args = None):
     if args == None: args = sys.argv[1:]
     parser = argparse.ArgumentParser(description=" pytrimNGS [OPTIONS]")
 
+    parser.add_argument('-d', '--database',  dest='database', default=None,
+        help='Handle databases. "download" for download all databases.')
     parser.add_argument('-t', '--template',  dest='template',
         help='Trimming template to use or path to template')
     parser.add_argument('-Q', '--fastqs',  dest='fastq_files', type=ls,

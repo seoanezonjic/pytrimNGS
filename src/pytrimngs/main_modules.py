@@ -128,7 +128,7 @@ def main_parse_STAR_log(args):
 
 def main_pytrimngs(opts):
     import pytrimngs # For external_data
-    from pytrimngs.pytrimngs import load_template, get_key_val, get_db_path, get_cmd, get_full_cmd, execute_cmd 
+    from pytrimngs.pytrimngs import load_template, get_key_val, get_db_path, get_cmd, get_full_cmd, execute_cmd, download_database, index_database 
 
     args = vars(opts)
 
@@ -145,6 +145,10 @@ def main_pytrimngs(opts):
         bb_path = os.path.dirname(execute_cmd("which bbmap.sh"))
     bb_path_current = os.path.join(bb_path, 'current')
     bb_path_jni = os.path.join(bb_path, 'jni')
+
+    if args['database'] == 'download':
+        download_database('https://github.com/rafnunser/seqtrimbb-databases.git', db_path, bb_path_current, bb_path_jni)
+        quit()
 
     #Load template
     if os.path.exists(args['template']):
@@ -174,8 +178,22 @@ def main_pytrimngs(opts):
         outfastq2 = False 
 
 
-    parms = load_template(template_path)
+    parms = {
+        'adapters_3_max_mismatches': 1, # PluginAdapters3
+        'adapters_5_max_mismatches': 1,  # PluginAdapters5
+        'quality_aditional_params' : ''
+    }
+    parms.update(load_template(template_path))
     parms.update(args['parameters'])
+
+    # Check adapters DB
+    adapters_db = parms.get('adapters_db')
+    if adapters_db == None:
+        adapters_db = get_db_path('adapters', db_path)
+    else:
+        dbout = os.path.join(os.path.dirname(adapters_db), 'index')
+        index_database(adapters_db, dbout, bb_path_jni, bb_path_current)
+
     plugins = {
         'PluginReadInputBb': {
             'executor': f'java -ea -cp {bb_path_current} jgi.ReformatReads t={args['workers']} -Xmx{args['memory']}m',
@@ -185,13 +203,13 @@ def main_pytrimngs(opts):
         'PluginAdapters3': {
             'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={args['workers']} -Xmx{args['memory']}m -Xms{args['memory']}m',
             'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
-                    'stats': 'adapters_3_trimming_stats.txt', 'k': 15, 'mink':8, 'hdist':1, 'ktrim': 'r', 'ref': get_db_path('adapters', db_path),  'tbo': '', 'tpe': ''},
+                    'stats': 'adapters_3_trimming_stats.txt', 'k': 15, 'mink':8, 'hdist': parms['adapters_3_max_mismatches'], 'ktrim': 'r', 'ref': adapters_db,  'tbo': '', 'tpe': ''},
             'output': 'adapters_3_trimming_stats_cmd.txt'
         },
         'PluginAdapters5': {
             'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={args['workers']} -Xmx{args['memory']}m -Xms{args['memory']}m',
             'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
-                    'stats': 'adapters_5_trimming_stats.txt', 'k': 21, 'mink':11, 'hdist':1, 'ktrim': 'l', 'ref': get_db_path('adapters', db_path),  'tbo': '', 'tpe': ''},
+                    'stats': 'adapters_5_trimming_stats.txt', 'k': 21, 'mink':11, 'hdist': parms['adapters_5_max_mismatches'], 'ktrim': 'l', 'ref': adapters_db,  'tbo': '', 'tpe': ''},
             'output': 'adapters_5_trimming_stats_cmd.txt'
         },
         'PluginPolyAt': {
@@ -203,7 +221,8 @@ def main_pytrimngs(opts):
         'PluginQuality':{
             'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={args['workers']} -Xmx{args['memory']}m -Xms{args['memory']}m',
             'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
-                       'trimq': parms['quality_threshold'], 'qtrim': 'rl'}, 
+                       'trimq': parms['quality_threshold'], 'qtrim': 'rl'},
+            'additional_parameters': parms['quality_aditional_params'], 
             'output': 'quality_trimming_stats.txt'
         },
         'PluginLowComplexity':{
