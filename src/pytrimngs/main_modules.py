@@ -147,6 +147,7 @@ def main_pytrimngs(opts):
     bb_path_jni = os.path.join(bb_path, 'jni')
 
     if args['database'] == 'download':
+        if not os.path.exists(db_path): os.mkdir(db_path)
         download_database('https://github.com/rafnunser/seqtrimbb-databases.git', db_path, bb_path_current, bb_path_jni)
         quit()
 

@@ -76,9 +76,10 @@ def execute_cmd(cmd):
 
 def download_database(urldb, output, current, jni):
     cmd = f"git clone {urldb} {output}"
+    print(cmd)
+    execute_cmd(cmd)
     index_folder = os.path.join(output, 'indices')
     if not os.path.exists(index_folder): os.mkdir(index_folder)
-    execute_cmd(cmd)
     for subDBin in glob.glob(os.path.join(output, 'fastas', '*')):
         subDB = os.path.basename(subDBin)
         subDBout = os.path.join(index_folder, subDB)
