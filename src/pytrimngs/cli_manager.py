@@ -7,8 +7,16 @@ def ls(x): return x.split(',')
 def dictio(x): 
     d = {}
     for pair in x.split(';'):
-        k, v = pair.split('=', 1) # split only cuts the first = character
-        d[k] = v
+        p = pair.split('=', 1) # split only cuts the first = character
+        if len(p) == 2:
+            key, val = p
+            key = key.strip()
+            val = val.strip()
+            if ',' in val: val = val.split(',')
+        else:
+            key = pair[0]
+            val = ''            
+        d[key] = val
     return d
 
 def pytrimngs(args = None):

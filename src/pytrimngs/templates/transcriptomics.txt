@@ -13,7 +13,7 @@
 # Help: <li>PluginLowComplexity: filtering out reads with low complexity. </li>
 # Help: </ul>
 
-plugin_list = PluginAdapters3,PluginAdapters5,PluginPolyAt,PluginQuality,PluginLowComplexity
+plugin_list = PluginAdapters3,PluginAdapters5,PluginPolyAt,PluginContaminants,PluginQuality,PluginLowComplexity
 
 contaminants_db = contaminants,cont_ribosome
 

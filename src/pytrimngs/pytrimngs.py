@@ -3,6 +3,7 @@ import glob
 import sys
 import os
 import re
+import math
 import subprocess
 from termcolor import colored
 
@@ -20,7 +21,7 @@ def load_template(path):
     return parameters
 
 def get_key_val(text):
-    pair = text.split('=')
+    pair = text.split('=', 1)
     if len(pair) == 2:
         key, val = pair
         key = key.strip()
@@ -42,6 +43,8 @@ def get_cmd(plugin, out_logs=None):
 
     if params.get('stats'): 
         params['stats'] = os.path.join(out_logs, params['stats'])
+    elif params.get('refstats'): 
+        params['refstats'] = os.path.join(out_logs, params['refstats'])        
     for param, val in params.items():
         if val !='' and val != None:
             cmd = cmd + f' {param}={val}'
@@ -51,20 +54,39 @@ def get_cmd(plugin, out_logs=None):
     cmd = cmd + f" {add_opts}" + f' 2> {os.path.join(out_logs, plugin['output'])}'
     return cmd
 
-def get_full_cmd(plugin_list, plugins, out_log=None):
+def get_full_cmd(plugin_list, plugins, db_path, bb_path_jni, bb_path_current, out_log=None, parms= {}):
     modules = ['PluginReadInputBb']
     modules.extend(plugin_list)
     modules.append('PluginSaveResultsBb')
-
     cmds = [ ]
     for mod in modules:
-        cmd = get_cmd(plugins[mod], out_logs=out_log)
-        print(f">> {colored(mod, 'green')}\n{colored(cmd, 'yellow')}")
-        cmds.append(cmd)
+        plugin = plugins[mod]
+        if mod == 'PluginContaminants':
+            for cDB in parms['contaminants_db']:
+                if os.path.exists(cDB): #Custom DB
+                    dbout = os.path.join(os.path.dirname(cDB), 'index')
+                    dbname = os.path.basename(cDB).split('.')[0]
+                    index_database(cDB, dbout, bb_path_jni, bb_path_current)
+                    plugin['output'] = f"{dbname}_contaminants_filtering_stats_cmd.txt"
+                    plugin['parameters']['path'] = dbout
+                    plugin['parameters']['refstats'] = f"{dbname}_contaminants_filtering_stats.txt"
+                else: # internal DB
+                    cDB_path = os.path.join(db_path, 'indices', cDB)
+                    plugin['output'] = f"{cDB}_contaminants_filtering_stats_cmd.txt"
+                    plugin['parameters']['path'] = cDB_path
+                    plugin['parameters']['refstats'] = f"{cDB}_contaminants_filtering_stats.txt"
+                add_pluguin_cmd(plugin, mod, cmds, out_log)
+        else:
+            add_pluguin_cmd(plugin, mod, cmds, out_log)
 
     pipe_cmd = " | ".join(cmds)
     print(f"\n>> {colored('FULL CMD', 'red')}\n{colored(pipe_cmd, 'blue')}")
     return pipe_cmd
+
+def add_pluguin_cmd(plugin, mod, cmds, out_logs=None):
+    cmd = get_cmd(plugin, out_logs=out_logs)
+    print(f">> {colored(mod, 'green')}\n{colored(cmd, 'yellow')}")
+    cmds.append(cmd)
 
 def execute_cmd(cmd):
     result = subprocess.check_output(cmd, shell=True, text=True, stderr=subprocess.STDOUT)
@@ -93,3 +115,26 @@ def index_database(dbin, dbout, jni, current):
         execute_cmd(cmd)
     else:
         print(f" -- The folder database {dbout} exists, skipping indexing. To update, remove the folder before execution")
+
+def get_cpu(plugin_list, contaminants_db, workers):
+    cpu_assign = {}
+    n_cont_db = 0
+    if contaminants_db != None: n_cont_db = len(contaminants_db)
+    min_cpu = len(plugin_list) + 2 + n_cont_db -1 # +2 for cpus used in input and output reads. -1 for the cpu already assigned to the PluginContaminant in first iteration
+    if workers < min_cpu: print(f'> WARNING! The current configuration needs at least {min_cpu} threads')
+    for p in plugin_list: cpu_assign[p] = 1
+    free_cpu = workers - min_cpu
+    if free_cpu > 0:
+        if 'PluginContaminants' in plugin_list:
+            cpu4contDB = math.ceil(free_cpu/n_cont_db)
+            cpu_assign['PluginContaminants'] += cpu4contDB
+        else: #adapters
+            adapt_count = 0
+            if 'PluginAdapters3' in plugin_list: adapt_count +=1
+            if 'PluginAdapters5' in plugin_list: adapt_count +=1
+            cpu4adapt = math.ceil(free_cpu/adapt_count)
+            cpu_assign['PluginAdapters3'] += cpu4adapt
+            cpu_assign['PluginAdapters5'] += cpu4adapt
+
+    print(f"cpu assign: {cpu_assign}") 
+    return cpu_assign

@@ -128,7 +128,7 @@ def main_parse_STAR_log(args):
 
 def main_pytrimngs(opts):
     import pytrimngs # For external_data
-    from pytrimngs.pytrimngs import load_template, get_key_val, get_db_path, get_cmd, get_full_cmd, execute_cmd, download_database, index_database 
+    from pytrimngs.pytrimngs import load_template, get_key_val, get_db_path, get_cmd, get_full_cmd, execute_cmd, download_database, index_database, get_cpu 
 
     args = vars(opts)
 
@@ -182,11 +182,10 @@ def main_pytrimngs(opts):
     parms = {
         'adapters_3_max_mismatches': 1, # PluginAdapters3
         'adapters_5_max_mismatches': 1,  # PluginAdapters5
-        'quality_aditional_params' : ''
     }
     parms.update(load_template(template_path))
     parms.update(args['parameters'])
-
+    cpu_assignation = get_cpu(parms['plugin_list'], parms.get('contaminants_db'), args['workers'])
     # Check adapters DB
     adapters_db = parms.get('adapters_db')
     if adapters_db == None:
@@ -194,46 +193,53 @@ def main_pytrimngs(opts):
     else:
         dbout = os.path.join(os.path.dirname(adapters_db), 'index')
         index_database(adapters_db, dbout, bb_path_jni, bb_path_current)
-
     plugins = {
         'PluginReadInputBb': {
-            'executor': f'java -ea -cp {bb_path_current} jgi.ReformatReads t={args['workers']} -Xmx{args['memory']}m',
+            'executor': f'java -ea -cp {bb_path_current} jgi.ReformatReads t=1 -Xmx{args['memory']}m',
             'parameters': {'in': infastq1, 'int': 'f', 'out': 'stdout.fastq'}, # 'in2': infastq2,
             'output': 'input_stats.txt'
             },
         'PluginAdapters3': {
-            'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={args['workers']} -Xmx{args['memory']}m -Xms{args['memory']}m',
+            'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={cpu_assignation.get('PluginAdapters3')} -Xmx{args['memory']}m -Xms{args['memory']}m',
             'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
                     'stats': 'adapters_3_trimming_stats.txt', 'k': 15, 'mink':8, 'hdist': parms['adapters_3_max_mismatches'], 'ktrim': 'r', 'ref': adapters_db,  'tbo': '', 'tpe': ''},
             'output': 'adapters_3_trimming_stats_cmd.txt'
         },
         'PluginAdapters5': {
-            'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={args['workers']} -Xmx{args['memory']}m -Xms{args['memory']}m',
+            'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={cpu_assignation.get('PluginAdapters5')} -Xmx{args['memory']}m -Xms{args['memory']}m',
             'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
                     'stats': 'adapters_5_trimming_stats.txt', 'k': 21, 'mink':11, 'hdist': parms['adapters_5_max_mismatches'], 'ktrim': 'l', 'ref': adapters_db,  'tbo': '', 'tpe': ''},
             'output': 'adapters_5_trimming_stats_cmd.txt'
         },
         'PluginPolyAt': {
-            'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={args['workers']} -Xmx{args['memory']}m -Xms{args['memory']}m',
+            'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={cpu_assignation.get('PluginPolyAt')} -Xmx{args['memory']}m -Xms{args['memory']}m',
             'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
                        'trimpolya': 9 },
             'output': 'polyat_trimming_stats.txt'
         },
+        'PluginContaminants': {
+            'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} align2.BBSplitter t={cpu_assignation.get('PluginContaminants')} -Xmx{args['memory']}m -Xms{args['memory']}m',
+            'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
+                       'ow': 't', 'fastareadlen': 500, 'minhits': 1, 'maxindel': 20, 'qtrim': 'rl',
+                        'untrim': 't', 'trimq': 6, 'minratio': 0.56}, # path=/indices/contaminants refstats=/output_files_tmp
+            'additional_parameters': parms.get('contaminants_aditional_params'), 
+            'output': None
+        },
         'PluginQuality':{
-            'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={args['workers']} -Xmx{args['memory']}m -Xms{args['memory']}m',
+            'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={cpu_assignation.get('PluginQuality')} -Xmx{args['memory']}m -Xms{args['memory']}m',
             'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
                        'trimq': parms['quality_threshold'], 'qtrim': 'rl'},
-            'additional_parameters': parms['quality_aditional_params'], 
+            'additional_parameters': parms.get('quality_aditional_params'), 
             'output': 'quality_trimming_stats.txt'
         },
         'PluginLowComplexity':{
-            'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={args['workers']} -Xmx{args['memory']}m -Xms{args['memory']}m',
+            'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={cpu_assignation.get('PluginLowComplexity')} -Xmx{args['memory']}m -Xms{args['memory']}m',
             'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
                        'entropy': 0.01, 'entropywindow': 50, 'minlength': 50},
             'output': 'low_complexity_stats.txt'
         },
         'PluginSaveResultsBb': {
-            'executor': f'java -ea -cp {bb_path_current} jgi.ReformatReads t={args['workers']} -Xmx{args['memory']}m',
+            'executor': f'java -ea -cp {bb_path_current} jgi.ReformatReads t=1 -Xmx{args['memory']}m',
             'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
                            'out': outfastq1, 'minlength': parms['minlength']}, #'out2': outfastq2,
             'output': 'output_stats.txt'
@@ -244,6 +250,6 @@ def main_pytrimngs(opts):
     if infastq2 != False: plugins['PluginReadInputBb']['parameters']['in2'] = infastq2
     if outfastq2 != False: plugins['PluginSaveResultsBb']['parameters']['out2'] = outfastq2
 
-    pipe_cmd = get_full_cmd(parms['plugin_list'], plugins, out_log=out_logs)
+    pipe_cmd = get_full_cmd(parms['plugin_list'], plugins, db_path, bb_path_jni, bb_path_current, out_log=out_logs, parms=parms)
     execute_cmd(pipe_cmd)
     os.rename(tmp_output, final_output)
