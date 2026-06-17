@@ -136,6 +136,5 @@ def get_cpu(plugin_list, contaminants_db, workers):
             cpu4adapt = math.ceil(free_cpu/adapt_count)
             cpu_assign['PluginAdapters3'] += cpu4adapt
             cpu_assign['PluginAdapters5'] += cpu4adapt
-
     print(f"cpu assign: {cpu_assign}") 
     return cpu_assign
