@@ -185,6 +185,9 @@ def main_pytrimngs(opts):
     }
     parms.update(load_template(template_path))
     parms.update(args['parameters'])
+    if parms.get('plugin_list') != None and not isinstance(parms['plugin_list'], list): parms['plugin_list'] = [parms['plugin_list']]
+    if parms.get('contaminants_db') != None and not isinstance(parms['contaminants_db'], list): parms['contaminants_db'] = [parms['contaminants_db']]
+
     cpu_assignation = get_cpu(parms['plugin_list'], parms.get('contaminants_db'), args['workers'])
     # Check adapters DB
     adapters_db = parms.get('adapters_db')
@@ -219,7 +222,7 @@ def main_pytrimngs(opts):
         },
         'PluginContaminants': {
             'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} align2.BBSplitter t={cpu_assignation.get('PluginContaminants')} -Xmx{args['memory']}m -Xms{args['memory']}m',
-            'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
+            'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't', 
                        'ow': 't', 'fastareadlen': 500, 'minhits': 1, 'maxindel': 20, 'qtrim': 'rl',
                         'untrim': 't', 'trimq': 6, 'minratio': 0.56}, # path=/indices/contaminants refstats=/output_files_tmp
             'additional_parameters': parms.get('contaminants_aditional_params'), 
@@ -239,7 +242,7 @@ def main_pytrimngs(opts):
             'output': 'low_complexity_stats.txt'
         },
         'PluginSaveResultsBb': {
-            'executor': f'java -ea -cp {bb_path_current} jgi.ReformatReads t=1 -Xmx{args['memory']}m',
+            'executor': f'java -ea -cp {bb_path_current} jgi.ReformatReads t=2 -Xmx{args['memory']}m',
             'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
                            'out': outfastq1, 'minlength': parms['minlength']}, #'out2': outfastq2,
             'output': 'output_stats.txt'

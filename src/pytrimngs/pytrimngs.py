@@ -126,8 +126,9 @@ def get_cpu(plugin_list, contaminants_db, workers):
     free_cpu = workers - min_cpu
     if free_cpu > 0:
         if 'PluginContaminants' in plugin_list:
-            cpu4contDB = math.ceil(free_cpu/n_cont_db)
-            cpu_assign['PluginContaminants'] += cpu4contDB
+            #cpu4contDB = math.ceil(free_cpu/n_cont_db)
+            cpu4contDB = workers
+            cpu_assign['PluginContaminants'] = cpu4contDB
         else: #adapters
             adapt_count = 0
             if 'PluginAdapters3' in plugin_list: adapt_count +=1
