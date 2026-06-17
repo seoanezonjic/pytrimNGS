@@ -148,7 +148,7 @@ def main_pytrimngs(opts):
 
     if args['database'] == 'download':
         if not os.path.exists(db_path): os.mkdir(db_path)
-        download_database('https://github.com/rafnunser/seqtrimbb-databases.git', db_path, bb_path_current, bb_path_jni)
+        download_database('https://github.com/seoanezonjic/pytrimngs-databases.git', db_path, bb_path_current, bb_path_jni)
         quit()
 
     #Load template
@@ -187,7 +187,6 @@ def main_pytrimngs(opts):
     parms.update(args['parameters'])
     if parms.get('plugin_list') != None and not isinstance(parms['plugin_list'], list): parms['plugin_list'] = [parms['plugin_list']]
     if parms.get('contaminants_db') != None and not isinstance(parms['contaminants_db'], list): parms['contaminants_db'] = [parms['contaminants_db']]
-
     cpu_assignation = get_cpu(parms['plugin_list'], parms.get('contaminants_db'), args['workers'])
     # Check adapters DB
     adapters_db = parms.get('adapters_db')
@@ -196,6 +195,8 @@ def main_pytrimngs(opts):
     else:
         dbout = os.path.join(os.path.dirname(adapters_db), 'index')
         index_database(adapters_db, dbout, bb_path_jni, bb_path_current)
+    cont_rib_base = os.path.join(db_path, 'fastas', 'cont_ribosome')
+    cont_rib_db = f"{os.path.join(cont_rib_base, 'rrna_lsu90.fasta.gz')},{os.path.join(cont_rib_base, 'rrna_ssu90.fasta.gz')}"
     plugins = {
         'PluginReadInputBb': {
             'executor': f'java -ea -cp {bb_path_current} jgi.ReformatReads t=1 -Xmx{args['memory']}m',
@@ -228,6 +229,12 @@ def main_pytrimngs(opts):
             'additional_parameters': parms.get('contaminants_aditional_params'), 
             'output': None
         },
+        'PluginRiboContaminants': {
+            'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={cpu_assignation.get('PluginRiboContaminants')} -Xmx{args['memory']}m -Xms{args['memory']}m',
+            'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't', 
+                       'stats': 'ribo_cont_trimming_stats.txt', 'ref': cont_rib_db, 'k':31 },
+            'output': 'ribo_cont_trimming_stats_cmd.txt'
+        },        
         'PluginQuality':{
             'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} jgi.BBDuk t={cpu_assignation.get('PluginQuality')} -Xmx{args['memory']}m -Xms{args['memory']}m',
             'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': 't',
