@@ -23,6 +23,15 @@ def get_adapters_reads(files_index):
         reads_after_adapters = min(reads_after_adapters)
     return reads_after_adapters
 
+def get_ribo_cont_reads(files_index):
+    reads_after = 0
+    for file in ["ribo_cont_trimming_stats_cmd.txt"]:
+        data = files_index.get(file) 
+        if data == None:  continue
+        for line in data: 
+            if line[0] == "Result:": reads_after += int(line[1].split("reads")[0])
+    return reads_after
+
 def get_contaminant_reads(files_index):
     all_contaminants = 0
     for file in ["contaminants_contaminants_filtering_stats.txt"]:
@@ -51,6 +60,7 @@ def main_pytrimngs_results_parser(opts):
     stbb_metrics = {}
     stbb_metrics["adapter_filter_passed"] = get_adapters_reads(files_index)
     stbb_metrics["contaminants_reads"] = get_contaminant_reads(files_index)
+    stbb_metrics["ribo_contaminants_reads"] = get_ribo_cont_reads(files_index)
     print_metrics(stbb_metrics)
 
 def print_metrics(stbb_metrics):
