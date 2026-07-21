@@ -135,6 +135,20 @@ def main_parse_STAR_log(args):
                 metric = re.sub(' ', '_', metric)
                 print(f"{metric}\t{value}")
 
+def main_filter_fastq(args):
+    opts = vars(args)
+
+    entry = []
+    attributes_parsed = 0
+    with open(opts['input'], 'r') as fh:
+        for line in fh:
+            line = line.rstrip()
+            attributes_parsed += 1
+            entry.append(line)
+            if attributes_parsed == 4:
+                if len(entry[1]) >= opts['min_length']: print("\n".join(entry))
+                entry = []
+                attributes_parsed = 0
 
 def main_pytrimngs(opts):
     import pytrimngs # For external_data

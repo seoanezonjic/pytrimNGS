@@ -73,3 +73,14 @@ def parse_STAR_log(args = None):
         help='Star Log File as input')
     args = parser.parse_args()
     main_parse_STAR_log(args)
+
+def filter_fastq(args = None):
+    if args == None: args = sys.argv[1:]
+    parser = argparse.ArgumentParser(description='Filter FASTQ records by sequence length.')
+    parser.add_argument('-i', '--input', required=True, dest= 'input',
+                        help='Set input file')
+    parser.add_argument('-m', '--min_length', type=int, required=True, dest='min_length', 
+                        help='Set minimum length size')
+    args = parser.parse_args()
+
+    main_filter_fastq(args)
