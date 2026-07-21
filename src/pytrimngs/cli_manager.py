@@ -84,3 +84,16 @@ def filter_fastq(args = None):
     args = parser.parse_args()
 
     main_filter_fastq(args)
+
+def collapse_bwt(args = None):
+    if args == None: args = sys.argv[1:]
+
+    parser = argparse.ArgumentParser(description='Collapse and count identical BWT mappings, updating read names.')
+    # Support both -i/--input and a positional argument for compatibility
+    parser.add_argument('-i', '--input', help='Input uncollapsed BWT file (tab-delimited)')
+    parser.add_argument('input_pos', nargs='?', help=argparse.SUPPRESS)
+    args = parser.parse_args()
+
+    main_collapse_bwt(args)
+
+    

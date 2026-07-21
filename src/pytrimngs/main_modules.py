@@ -150,6 +150,66 @@ def main_filter_fastq(args):
                 entry = []
                 attributes_parsed = 0
 
+READ_NAME = 0
+STRAND = 1
+CHR = 2
+COORD = 3
+SEQ = 4
+
+def main_collapse_bwt(opts):
+    args = vars(opts)
+
+    input_bwt = args['input'] if args['input'] is not None else args['input_pos']
+    if not input_bwt or not os.path.isfile(input_bwt) or os.stat(input_bwt).st_size == 0:
+        sys.stderr.write("No input file set\n\n\tUSAGE:\tcollapse_bwt uncollapsed.bwt > collapsed.bwt\n")
+        sys.exit(1)
+
+    # Use streaming indexing approach
+    indexed_bwt = load_and_index_bwt(input_bwt)
+    collapsed_bwt = build_collapsed_bwt(indexed_bwt)
+    print_output(collapsed_bwt)
+
+def load_and_index_bwt(input_file):
+    """
+    Read file line-by-line and create an ordered index:
+    key -> [first_mapping, count]
+    The insertion order is preserved .
+    """
+    indexed_bwt = {}
+    with open(input_file, 'r') as fh:
+        for line in fh:
+            mapping = line.rstrip('\n').split('\t')
+            key = f"{mapping[CHR]}:{mapping[STRAND]}:{mapping[COORD]}:{mapping[SEQ]}"
+            if key not in indexed_bwt:
+                indexed_bwt[key] = [mapping, 1]
+            else:
+                indexed_bwt[key][1] += 1
+    return indexed_bwt
+
+def build_collapsed_bwt(indexed_bwt):
+    """
+    Build collapsed entries. For each indexed key (in insertion order),
+    update stacked_mappings and change the read name to:
+      seq_{stacked_mappings}_x{collapsed_mappings}
+    """
+    collapsed_bwt = []
+    stacked_mappings = 0
+    for _id, attributes in indexed_bwt.items():
+        bwt_entry, collapsed_mappings = attributes
+        stacked_mappings += collapsed_mappings
+        collapsed_bwt.append(change_read_name(stacked_mappings, collapsed_mappings, bwt_entry))
+    return collapsed_bwt
+
+def change_read_name(stacked_mappings, collapsed_mappings, bwt_entry):
+    """Replace READ_NAME field with the collapsed name and return the entry."""
+    bwt_entry[READ_NAME] = f"seq_{stacked_mappings}_x{collapsed_mappings}"
+    return bwt_entry
+
+def print_output(bwt):
+    """Print each bwt entry as a tab-separated line."""
+    for bwt_entry in bwt: print("\t".join(bwt_entry))    
+
+
 def main_pytrimngs(opts):
     import pytrimngs # For external_data
     from pytrimngs.pytrimngs import load_template, get_key_val, get_db_path, get_cmd, get_full_cmd, execute_cmd, download_database, index_database, get_cpu 
