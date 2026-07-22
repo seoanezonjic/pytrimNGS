@@ -96,4 +96,36 @@ def collapse_bwt(args = None):
 
     main_collapse_bwt(args)
 
+def maskFasta(args = None):
+    if args == None: args = sys.argv[1:]
+
+    parser = argparse.ArgumentParser(description='Mask sequences in fasta file.')
+    # Support both -i/--input and a positional argument for compatibility
+    parser.add_argument('bed_file', nargs='?', help=argparse.SUPPRESS)
+    parser.add_argument('regions', nargs='?', help=argparse.SUPPRESS)
+    args = parser.parse_args()
+
+    main_maskFasta(args)
     
+def lista2fasta(args = None):
+    if args == None: args = sys.argv[1:]
+
+    parser = argparse.ArgumentParser(description='Extract sequences from fasta.')
+    # Support both -i/--input and a positional argument for compatibility
+    parser.add_argument('seq_ids', nargs='?', help=argparse.SUPPRESS)
+    parser.add_argument('fasta', nargs='?', help=argparse.SUPPRESS)
+    args = parser.parse_args()
+
+    main_lista2fasta(args)
+
+def get_too_short(args = None):
+    if args == None: args = sys.argv[1:]
+
+    parser = argparse.ArgumentParser(description='Extract reads with lower alignment coverage in bam file.')
+    # Support both -i/--input and a positional argument for compatibility
+    parser.add_argument('input', nargs='?', help=argparse.SUPPRESS)
+    parser.add_argument('output', nargs='?', help=argparse.SUPPRESS)
+    parser.add_argument('min_soft_clip_rate', type=float, nargs='?', help=argparse.SUPPRESS)
+    args = parser.parse_args()
+
+    main_get_too_short(args)    

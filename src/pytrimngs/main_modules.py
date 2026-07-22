@@ -209,6 +209,100 @@ def print_output(bwt):
     """Print each bwt entry as a tab-separated line."""
     for bwt_entry in bwt: print("\t".join(bwt_entry))    
 
+def mask_fasta(mask_regs, path):
+    with open(path) as f:
+        s_id = None
+        seq = ''
+        for line in f:
+            line = line.rstrip()
+            if re.search('^>', line):
+                line = line.replace('>', '')
+                regs = mask_regs.get(s_id)
+                if regs != None: seq = mask_seq(seq, regs)
+                print(f">{s_id}\n{seq}")
+                s_id = line
+                seq = ''
+            else:
+                seq = seq + line
+    regs = mask_regs.get(s_id)
+    if regs != None: seq = mask_seq(seq, regs)
+    print(f">{s_id}\n{seq}")
+
+#bed file formated taking into account info in https://www.ensembl.org/info/genome/genebuild/human_PARS.html
+def load_bed(path):
+    regs = {}
+    with open(path) as f: 
+        for line in f: 
+            chrm_id, start, stop = line.rstrip().split("\t")
+            chrm = regs.get(chrm_id)
+            if chrm == None:
+                chrm = []
+                regs[chrm_id] = chrm
+            chrm.append([int(start) -1, int(stop) -1])
+    return regs
+
+def mask_seq(seq, regs):
+    new_seq = ''
+    current_coord = 0
+    for start, stop in regs:#slicing gets +1 position
+        new_seq = new_seq + seq[current_coord:start] + 'N' * (stop +1 - start)
+        current_coord = stop + 1
+    new_seq = new_seq + seq[current_coord:]
+    return new_seq
+
+def main_maskFasta(opts):
+    args = vars(opts)   
+    seq_ids = load_bed(args['bed_file'])
+    mask_fasta(seq_ids, args['regions'])
+
+def filter_fasta(ids, path):
+    with open(path) as f:
+        s_id = None
+        seq = ''
+        for line in f:
+            line = line.rstrip()
+            if re.search('^>', line):
+                line = line.replace('>', '')
+                if s_id in ids: print(f">{s_id}\n{seq}")
+                s_id = line
+                seq = ''
+            else:
+                seq = seq + line
+    if s_id in ids: print(f">{s_id}\n{seq}")
+
+def load_ids(path):
+    ids = []
+    with open(path) as f:
+        for line in f: ids.append(line.rstrip())
+    return ids
+
+def main_lista2fasta(opts):
+    args = vars(opts)   
+    seq_ids = load_ids(args['seq_ids'])
+    filter_fasta(seq_ids, args['fasta'])
+
+def main_get_too_short(opts):
+    import pysam
+    args = vars(opts) 
+    bamfile = pysam.AlignmentFile(args['input'], "rb")
+    outfile = pysam.AlignmentFile(args['output'] + ".bam", "w", template=bamfile)
+    outFasta = open(args['output'] + ".fasta",'w')
+    unaligned_reads = 0
+    for read in bamfile:#.fetch('chr1'):
+        if read.is_secondary or read.is_supplementary: continue
+        read_len = read.infer_read_length()
+        cigar_nucleotides, cigar_blocks = read.get_cigar_stats()
+        #print(f"{cigar_nucleotides[0]} {cigar_nucleotides[4]} {read_len}")
+        soft_clipping_rate = cigar_nucleotides[4]/read_len
+        if soft_clipping_rate >= args['min_soft_clip_rate']:
+            outfile.write(read)
+            pair_read = 1
+            if read.is_read2: pair_read = 2
+            outFasta.write(f">{read.query_name}_{pair_read}\n{read.query_sequence}\n")
+            unaligned_reads += 1
+
+    print(f"unaligned_reads: {unaligned_reads}")
+    outFasta.close()    
 
 def main_pytrimngs(opts):
     import pytrimngs # For external_data
