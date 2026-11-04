@@ -403,7 +403,7 @@ def main_pytrimngs(opts):
         },
         'PluginContaminants': {
             'executor': f'java -Djava.library.path={bb_path_jni} -ea -cp {bb_path_current} align2.BBSplitter t={cpu_assignation.get('PluginContaminants')} -Xmx{args['memory']}m -Xms{args['memory']}m',
-            'parameters': {'in': 'stdin.fastq', 'out': 'stdout.fastq', 'int': interleaved, 
+            'parameters': {'in': 'stdin.fastq', 'outu': 'stdout.fastq', 'int': interleaved, 
                        'ow': 't', 'fastareadlen': 500, 'minhits': 1, 'maxindel': 20, 'qtrim': 'rl',
                         'untrim': 't', 'trimq': 6, 'minratio': 0.56}, # path=/indices/contaminants refstats=/output_files_tmp
             'additional_parameters': parms.get('contaminants_aditional_params'), 
